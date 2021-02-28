@@ -6,7 +6,7 @@ using RDtext.Buffers;
 namespace RDtext_tests {
 
 
-    public class FilleBufferTests : CommonTest {
+    public class FileBufferTests : CommonTest {
 
         [TestMethod]
         public void TestBufferId() {
