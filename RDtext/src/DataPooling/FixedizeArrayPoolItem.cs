@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace RDtext.DataPooling {
 
@@ -20,14 +20,22 @@ namespace RDtext.DataPooling {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
 
-            Data = new T[capacity];
+            data = new T[capacity];
             Capacity = capacity;
         }
 
         /// <summary>
         ///     array data
         /// </summary>
-        public T[] Data { get; }
+        private readonly T[] data;
+
+        /// <summary>
+        ///     access array item
+        /// </summary>
+        /// <param name="index">item index</param>
+        /// <returns></returns>
+        public T this[int index]
+            => data[index];
 
         /// <summary>
         ///     array capacity
@@ -39,10 +47,13 @@ namespace RDtext.DataPooling {
         /// </summary>
         protected internal override void Clear() {
 
-            if (Data.Length != Capacity)
+            if (data.Length != Capacity)
                 throw new InvalidOperationException();
 
-            Array.Clear(Data, 0, Data.Length);
+            Array.Clear(data, 0, data.Length);
         }
+
+
+        internal T[] GetData() => data;
     }
 }

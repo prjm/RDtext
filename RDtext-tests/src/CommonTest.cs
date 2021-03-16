@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 
-namespace RDtext_tests {
+namespace RDtext.Tests {
 
-    public class CommonTest {
+    /// <summary>
+    ///     base class for tests
+    /// </summary>
+    public abstract class CommonTest {
 
         public static void AssertEqual(int expected, int actual)
             => Xunit.Assert.Equal(expected, actual);

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,15 +33,19 @@ namespace RDtext.Buffers {
         /// </summary>
         /// <param name="offset"></param>
         /// <param name="page"></param>
-        /// <param name="cancellationToken">cancellation token</param>
+        /// <param name="token">cancellation token</param>
         /// <returns></returns>
-        protected override async ValueTask<int> LoadPageAsync(long offset, Page page, CancellationToken cancellationToken) {
-            Stream.Seek(offset, SeekOrigin.Begin);
-            var result = Stream.ReadAsync(page.Data, cancellationToken);
+        protected override async ValueTask<int> LoadPageAsync(long offset, Page page, CancellationToken token) {
+            if (page is null)
+                throw new System.ArgumentNullException(nameof(page));
+
+            Stream.Position = offset;
+            var result = Stream.ReadAsync(page.GetBuffer(), token);
             if (result.IsCompletedSuccessfully)
                 return result.Result;
             else
                 return await result.ConfigureAwait(false);
         }
+
     }
 }

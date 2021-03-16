@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,13 +11,13 @@ namespace RDtext.Buffers {
     public abstract class BufferBase : IDisposable {
 
         private readonly Dictionary<long, Page> bufferedPages
-            = new Dictionary<long, Page>();
+            = new();
 
-        private readonly SemaphoreSlim mutex
-            = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim? mutex
+            = new(1, 1);
 
         private readonly Queue<long> pageQueue
-            = new Queue<long>();
+            = new();
 
         /// <summary>
         ///     create a new file buffer
@@ -58,6 +58,40 @@ namespace RDtext.Buffers {
         protected abstract ValueTask<int> LoadPageAsync(long offset, Page page, CancellationToken token = default);
 
         /// <summary>
+        ///     remove a page from the buffer
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async ValueTask RemovePageFromBuffer(Page page, CancellationToken cancellationToken = default) {
+
+            if (page is null)
+                throw new ArgumentNullException(nameof(page));
+
+            if (mutex == default)
+                throw new ObjectDisposedException(nameof(mutex));
+
+
+            await mutex.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try {
+
+                for (var i = 0; i < pageQueue.Count; i++) {
+                    var item = pageQueue.Dequeue();
+                    if (item != page.Number)
+                        pageQueue.Enqueue(item);
+                }
+
+                if (bufferedPages.TryGetValue(page.Number, out var oldPage)) {
+                    _ = bufferedPages.Remove(page.Number);
+                    oldPage.Dispose();
+                }
+            }
+            finally {
+                _ = mutex.Release();
+            }
+        }
+
+        /// <summary>
         ///     get a page by number
         /// </summary>
         /// <param name="number">page number</param>
@@ -68,22 +102,26 @@ namespace RDtext.Buffers {
             if (number < 0)
                 throw new ArgumentOutOfRangeException(nameof(number));
 
+            if (mutex == default)
+                throw new ObjectDisposedException(nameof(mutex));
+
             await mutex.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
                 if (bufferedPages.TryGetValue(number, out var result)) {
-                    result.IncreaseUsageCount();
+                    result.Pin();
                     return result;
                 }
 
                 if (pageQueue.Count >= Owner.NumberOfCachedPages) {
                     var lastPage = pageQueue.Dequeue();
-                    if (bufferedPages.TryGetValue(lastPage, out var oldPage) && oldPage.UsageCount < 1) {
-                        bufferedPages.Remove(lastPage);
-                        oldPage.ReturnBuffer();
+                    if (bufferedPages.TryGetValue(lastPage, out var oldPage) && !oldPage.IsPinned) {
+                        _ = bufferedPages.Remove(lastPage);
+                        oldPage.Dispose();
                     }
                 }
 
-                result = new Page(number, this, Owner.GetPageBuffer());
+                result = new Page(number, this, Owner.Pool);
+                result.Pin();
                 var offset = checked(Owner.PageSize * number);
                 var loadPage = LoadPageAsync(offset, result, cancellationToken);
                 if (loadPage.IsCompletedSuccessfully)
@@ -96,7 +134,7 @@ namespace RDtext.Buffers {
                 return result;
             }
             finally {
-                mutex.Release();
+                _ = mutex.Release();
             }
         }
 
@@ -107,10 +145,15 @@ namespace RDtext.Buffers {
         protected virtual void Dispose(bool disposing) {
             if (!disposing) return;
 
+            if (mutex != default) {
+                mutex.Dispose();
+                mutex = default;
+            }
+
             var pages = new List<long>(bufferedPages.Count);
             foreach (var number in pages) {
                 if (bufferedPages.Remove(number, out var page)) {
-                    page.ReturnBuffer();
+                    page.Dispose();
                 }
             }
         }

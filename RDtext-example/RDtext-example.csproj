@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>RDtext_example</RootNamespace>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <RootNamespace>RDtext_example</RootNamespace>
+        <LangVersion>latest</LangVersion>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <CodeAnalysisRuleSet>../RDtext.ruleset</CodeAnalysisRuleSet>
+        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RDtext\RDtext.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\RDtext\RDtext.csproj" />
+    </ItemGroup>
 
 </Project>

@@ -1,10 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
         <Nullable>enable</Nullable>
-        <LangVersion>9.0</LangVersion>
+        <LangVersion>latest</LangVersion>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <CodeAnalysisRuleSet>../RDtext.ruleset</CodeAnalysisRuleSet>
+        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     </PropertyGroup>
 
     <ItemGroup>

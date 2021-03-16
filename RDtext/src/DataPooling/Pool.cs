@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 
 namespace RDtext.DataPooling {
@@ -12,7 +12,7 @@ namespace RDtext.DataPooling {
         ///     return the array pool item
         /// </summary>
         /// <param name="poolItem"></param>
-        public abstract void Return(PoolItem poolItem);
+        public abstract void ReturnPoolItem(PoolItem poolItem);
 
     }
 
@@ -29,12 +29,12 @@ namespace RDtext.DataPooling {
         /// </summary>
         /// <returns></returns>
         public T Rent() {
-            if (items.TryDequeue(out var result)) {
-                result.Rent();
-                return result;
+            if (!items.TryDequeue(out var result)) {
+                result = CreateItem();
             }
 
-            return CreateItem();
+            result.Pin();
+            return result;
         }
 
         /// <summary>
@@ -46,25 +46,16 @@ namespace RDtext.DataPooling {
         /// <summary>
         ///     return a pool item
         /// </summary>
-        /// <param name="item"></param>
-        public override void Return(PoolItem item) {
-            if (item is null)
-                throw new ArgumentNullException(nameof(item));
+        /// <param name="poolItem"></param>
+        public override void ReturnPoolItem(PoolItem poolItem) {
+            if (poolItem is null)
+                throw new ArgumentNullException(nameof(poolItem));
 
-            if (!ReferenceEquals(item.ObjectPool, this))
+            if (!ReferenceEquals(poolItem.ObjectPool, this))
                 throw new InvalidOperationException();
 
-            if (item.IsInPool)
-                return;
-
-            lock (item) {
-                if (item.IsInPool)
-                    return;
-
-                item.Return();
-                item.Clear();
-                items.Enqueue((T)item);
-            }
+            poolItem.Clear();
+            items.Enqueue((T)poolItem);
         }
 
         /// <summary>

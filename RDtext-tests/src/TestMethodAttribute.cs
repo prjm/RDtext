@@ -1,9 +1,9 @@
-﻿
+
 using Xunit;
 
-namespace RDtext_tests {
+namespace RDtext.Tests {
 
-    public class TestMethodAttribute : FactAttribute {
+    public sealed class TestMethodAttribute : FactAttribute {
 
     }
 }

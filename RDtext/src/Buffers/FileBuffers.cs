@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +21,10 @@ namespace RDtext.Buffers {
         private readonly ConcurrentDictionary<BufferId, BufferBase> buffers
             = new ConcurrentDictionary<BufferId, BufferBase>();
 
-        private readonly FixedSizeArrayPool<byte> data;
+        /// <summary>
+        ///     used buffer pool
+        /// </summary>
+        public FixedSizeArrayPool<byte> Pool { get; }
 
         /// <summary>
         ///     create a new set of buffers
@@ -32,21 +35,14 @@ namespace RDtext.Buffers {
         public FileBuffers(int pageSize = DefaultPageSize, int numberOfPages = DefaultNumberOfPages, FixedSizeArrayPool<byte>? arrayPool = default) {
             PageSize = pageSize;
             NumberOfCachedPages = numberOfPages;
-            data = arrayPool ?? new FixedSizeArrayPool<byte>(pageSize);
+            Pool = arrayPool ?? new FixedSizeArrayPool<byte>(pageSize);
 
             if (numberOfPages < 0)
                 throw new ArgumentOutOfRangeException(nameof(numberOfPages));
 
-            if (data.Capacity != pageSize)
+            if (Pool.Capacity != pageSize)
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
         }
-
-        /// <summary>
-        ///     get a page buffer from the buffer pool
-        /// </summary>
-        /// <returns></returns>
-        public FixedizeArrayPoolItem<byte> GetPageBuffer()
-            => data.Rent();
 
         /// <summary>
         ///     page size of this file buffer

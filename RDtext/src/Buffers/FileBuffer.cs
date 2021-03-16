@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,9 +32,13 @@ namespace RDtext.Buffers {
         /// <param name="token"></param>
         /// <returns></returns>
         protected override async ValueTask<int> LoadPageAsync(long offset, Page page, CancellationToken token = default) {
+
+            if (page is null)
+                throw new System.ArgumentNullException(nameof(page));
+
             using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, Owner.PageSize, true);
-            stream.Seek(offset, SeekOrigin.Begin);
-            return await stream.ReadAsync(page.Data, token).ConfigureAwait(false);
+            stream.Position = offset;
+            return await stream.ReadAsync(page.GetBuffer(), token).ConfigureAwait(false);
         }
     }
 }

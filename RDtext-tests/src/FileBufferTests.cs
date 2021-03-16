@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
 
 using RDtext.Buffers;
+using RDtext.DataPooling;
 
-namespace RDtext_tests {
+namespace RDtext.Tests {
 
 
     public class FileBufferTests : CommonTest {
@@ -21,8 +22,8 @@ namespace RDtext_tests {
         }
 
         [TestMethod]
-        public async void TestReadFromStream() {
-            var buffers = new FileBuffers(100);
+        public async void TestPageCaching() {
+            using var buffers = new FileBuffers(10, 5);
             var memStream = new MemoryStream();
 
             var data = new byte[150];
@@ -32,15 +33,48 @@ namespace RDtext_tests {
             memStream.Write(data, 0, data.Length);
 
             var id = new BufferId(Guid.NewGuid(), "*");
-            var buffer = buffers.AddForMememoryStream(id, memStream);
-            var page = await buffer.GetPageAsync(0).ConfigureAwait(false);
-            AssertEqual(1, page[1]);
-            AssertEqual(100, page.Length);
+            using var buffer = buffers.AddForMememoryStream(id, memStream);
+            using var page1 = await buffer.GetPageAsync(0).ConfigureAwait(false);
+            using var page2 = await buffer.GetPageAsync(1).ConfigureAwait(false);
+            using var page3 = await buffer.GetPageAsync(2).ConfigureAwait(false);
+            using var page4 = await buffer.GetPageAsync(3).ConfigureAwait(false);
+            using (var page5 = await buffer.GetPageAsync(4).ConfigureAwait(false)) {
+
+                AssertEqual(0L, page1.Number);
+                AssertEqual(1L, page2.Number);
+                AssertEqual(2L, page3.Number);
+                AssertEqual(3L, page4.Number);
+                AssertEqual(4L, page5.Number);
+
+                AssertEqual(5, buffer.NumberOfBufferedPages);
+
+                using var page6 = await buffer.GetPageAsync(5).ConfigureAwait(false); AssertEqual(5L, page6.Number);
+                AssertEqual(6, buffer.NumberOfBufferedPages);
+            }
+            //AssertEqual(5, buffer.NumberOfBufferedPages);
+        }
+
+        [TestMethod]
+        public async void TestReadFromStream() {
+            using var buffers = new FileBuffers(100);
+            using var memStream = new MemoryStream();
+
+            var data = new byte[150];
+            for (byte i = 0; i < data.Length; i++)
+                data[i] = i;
+            memStream.Write(data, 0, data.Length);
+
+            var id = new BufferId(Guid.NewGuid(), "*");
+            using var buffer = buffers.AddForMememoryStream(id, memStream);
+            var page = UseAndReturn.That(await buffer.GetPageAsync(0).ConfigureAwait(false));
+            AssertEqual(1, page.Data[1]);
+            AssertEqual(100, page.Data.Length);
             page.Dispose();
 
-            page = await buffer.GetPageAsync(0).ConfigureAwait(false);
-            AssertEqual(0L, page.Number);
+            page = UseAndReturn.That(await buffer.GetPageAsync(0).ConfigureAwait(false));
+            AssertEqual(0L, page.Data.Number);
             AssertEqual(1, buffer.NumberOfBufferedPages);
+            page.Dispose();
         }
 
     }

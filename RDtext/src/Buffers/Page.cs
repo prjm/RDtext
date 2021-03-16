@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading;
-
+using System;
 using RDtext.DataPooling;
 
 namespace RDtext.Buffers {
@@ -8,19 +6,18 @@ namespace RDtext.Buffers {
     /// <summary>
     ///     page definition
     /// </summary>
-    public class Page : IDisposable {
+    public class Page : UsageCountedObject {
 
         /// <summary>
         ///     create a new page
         /// </summary>
-        /// <param name="number"></param>
-        /// <param name="owner"></param>
-        /// <param name="arrayPoolItem"></param>
-        internal Page(long number, BufferBase owner, FixedizeArrayPoolItem<byte> arrayPoolItem) {
+        /// <param name="number">page number</param>
+        /// <param name="owner">buffer owner</param>
+        /// <param name="buffer">data buffer</param>
+        internal Page(long number, BufferBase owner, FixedSizeArrayPool<byte> buffer) {
             Number = number;
             Owner = owner;
-            Buffer = arrayPoolItem;
-            usageCount = 1;
+            Buffer = buffer.Rent();
         }
 
         /// <summary>
@@ -39,26 +36,16 @@ namespace RDtext.Buffers {
         private FixedizeArrayPoolItem<byte>? Buffer { get; set; }
 
         /// <summary>
-        ///     page usage count
-        /// </summary>
-        private int usageCount;
-
-        /// <summary>
         ///     data length of this page
         /// </summary>
         public int Length { get; internal set; }
 
         /// <summary>
-        ///     usage count
+        ///     get the data array of this buffer
         /// </summary>
-        public int UsageCount
-            => usageCount;
-
-        /// <summary>
-        ///     page data
-        /// </summary>
-        public byte[] Data
-            => (Buffer ?? throw new InvalidOperationException()).Data;
+        /// <returns></returns>
+        public byte[] GetBuffer()
+            => (Buffer ?? throw new ObjectDisposedException(nameof(Buffer))).GetData();
 
         /// <summary>
         ///     byte by index
@@ -66,33 +53,23 @@ namespace RDtext.Buffers {
         /// <param name="index"></param>
         /// <returns></returns>
         public byte this[int index]
-            => (Buffer ?? throw new InvalidOperationException()).Data[index];
-
-        internal void IncreaseUsageCount()
-            => Interlocked.Increment(ref usageCount);
-
-        /// <summary>
-        ///     dispose this page
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing) {
-            if (!disposing) return;
-            Interlocked.Decrement(ref usageCount);
-        }
+            => (Buffer ?? throw new ObjectDisposedException(nameof(Buffer)))[index];
 
         /// <summary>
         ///     dispose this object
         /// </summary>
-        public void Dispose() {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing) {
+            base.Dispose(disposing);
+            if (disposing)
+                ReturnBuffer();
         }
 
-        internal void ReturnBuffer() {
+        private void ReturnBuffer() {
             var buf = Buffer;
             Buffer = default;
             if (buf != default)
-                buf.Dispose();
+                buf.UnPin();
         }
     }
 }
