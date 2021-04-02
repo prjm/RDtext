@@ -1,10 +1,12 @@
-﻿using System;
+using System;
+using RDtext.Attributes;
 
 namespace RDtext.Buffers {
 
     /// <summary>
     ///     buffer identifier
     /// </summary>
+    [Immutable]
     public class BufferId : IEquatable<BufferId> {
 
         /// <summary>

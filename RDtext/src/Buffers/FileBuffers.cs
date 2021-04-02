@@ -2,7 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-
+using System.Threading.Tasks;
+using RDtext.Base;
 using RDtext.DataPooling;
 
 namespace RDtext.Buffers {
@@ -10,7 +11,7 @@ namespace RDtext.Buffers {
     /// <summary>
     ///     page buffered manager
     /// </summary>
-    public class FileBuffers : IDisposable {
+    public class FileBuffers : IAsyncDisposable {
 
         private const int DefaultPageSize
             = 100 * 1024;
@@ -19,7 +20,7 @@ namespace RDtext.Buffers {
             = 10;
 
         private readonly ConcurrentDictionary<BufferId, BufferBase> buffers
-            = new ConcurrentDictionary<BufferId, BufferBase>();
+            = new();
 
         /// <summary>
         ///     used buffer pool
@@ -58,10 +59,10 @@ namespace RDtext.Buffers {
         ///     add a new file buffer for a memory stream
         /// </summary>
         /// <returns></returns>
-        public BufferBase AddForMememoryStream(BufferId id, MemoryStream s) {
+        public async ValueTask<BufferBase> AddForMememoryStream(BufferId id, MemoryStream s) {
             var buffer = new StreamBuffer(s, this);
             if (!buffers.TryAdd(id, buffer)) {
-                buffer.Dispose();
+                await buffer.DisposeAsync().NoSync();
                 throw new InvalidOperationException();
             }
             return buffer;
@@ -73,10 +74,10 @@ namespace RDtext.Buffers {
         /// <param name="id"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        public BufferBase AddForFile(BufferId id, string path) {
+        public async ValueTask<BufferBase> AddForFile(BufferId id, string path) {
             var buffer = new FileBuffer(path, this);
             if (!buffers.TryAdd(id, buffer)) {
-                buffer.Dispose();
+                await buffer.DisposeAsync().NoSync();
                 throw new InvalidOperationException();
             }
             return buffer;
@@ -86,22 +87,11 @@ namespace RDtext.Buffers {
         /// <summary>
         ///     dispose this buffer
         /// </summary>
-        /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing) {
-            if (!disposing) return;
-
+        public virtual async ValueTask DisposeAsync() {
             var keys = new List<BufferId>(buffers.Keys);
             foreach (var key in keys)
                 if (buffers.TryRemove(key, out var buffer))
-                    buffer.Dispose();
-        }
-
-        /// <summary>
-        ///     dispose this object
-        /// </summary>
-        public void Dispose() {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+                    await buffer.DisposeAsync().NoSync();
         }
     }
 }

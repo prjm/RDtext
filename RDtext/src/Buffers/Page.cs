@@ -1,4 +1,8 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using RDtext.Attributes;
+using RDtext.Base;
 using RDtext.DataPooling;
 
 namespace RDtext.Buffers {
@@ -6,6 +10,7 @@ namespace RDtext.Buffers {
     /// <summary>
     ///     page definition
     /// </summary>
+    [Mutable]
     public class Page : UsageCountedObject {
 
         /// <summary>
@@ -55,21 +60,23 @@ namespace RDtext.Buffers {
         public byte this[int index]
             => (Buffer ?? throw new ObjectDisposedException(nameof(Buffer)))[index];
 
+
         /// <summary>
-        ///     dispose this object
+        ///     unpin this page
         /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing) {
-            base.Dispose(disposing);
-            if (disposing)
-                ReturnBuffer();
+        /// <param name="isPinned"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        protected override async ValueTask DoUnPin(bool isPinned, CancellationToken cancellationToken) {
+            if (!isPinned)
+                await Owner.RemovePageFromBuffer(this, cancellationToken).NoSync();
         }
 
-        private void ReturnBuffer() {
+        private async ValueTask ReturnBuffer() {
             var buf = Buffer;
             Buffer = default;
             if (buf != default)
-                buf.UnPin();
+                await buf.UnPin().NoSync();
         }
     }
 }

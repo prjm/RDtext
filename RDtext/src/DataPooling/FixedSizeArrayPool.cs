@@ -1,10 +1,12 @@
-﻿using System;
+using System;
+using RDtext.Attributes;
 
 namespace RDtext.DataPooling {
 
     /// <summary>
     ///     array pool
     /// </summary>
+    [Mutable]
     public class FixedSizeArrayPool<T> : Pool<FixedizeArrayPoolItem<T>> {
 
         /// <summary>
@@ -29,6 +31,6 @@ namespace RDtext.DataPooling {
         /// </summary>
         /// <returns>create a new array pool item</returns>
         protected override FixedizeArrayPoolItem<T> CreateItem()
-            => new FixedizeArrayPoolItem<T>(this, Capacity);
+            => new(this, Capacity);
     }
 }

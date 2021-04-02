@@ -1,4 +1,5 @@
 using System;
+using RDtext.Attributes;
 
 namespace RDtext.DataPooling {
 
@@ -6,6 +7,7 @@ namespace RDtext.DataPooling {
     ///     fixed size array pool item
     /// </summary>
     /// <typeparam name="T">base data type</typeparam>
+    [Mutable]
     public class FixedizeArrayPoolItem<T> : PoolItem {
 
         /// <summary>

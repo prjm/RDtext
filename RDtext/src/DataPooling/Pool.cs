@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Concurrent;
+using RDtext.Attributes;
 
 namespace RDtext.DataPooling {
 
     /// <summary>
     ///     base class for object pools
     /// </summary>
+    [Mutable]
     public abstract class Pool {
 
         /// <summary>
@@ -19,10 +21,11 @@ namespace RDtext.DataPooling {
     /// <summary>
     ///     base class for object pooling
     /// </summary>
+    [Mutable]
     public abstract class Pool<T> : Pool where T : PoolItem {
 
         private readonly ConcurrentQueue<T> items
-            = new ConcurrentQueue<T>();
+            = new();
 
         /// <summary>
         ///     rent a new pool item
@@ -52,6 +55,9 @@ namespace RDtext.DataPooling {
                 throw new ArgumentNullException(nameof(poolItem));
 
             if (!ReferenceEquals(poolItem.ObjectPool, this))
+                throw new InvalidOperationException();
+
+            if (poolItem.IsPinned)
                 throw new InvalidOperationException();
 
             poolItem.Clear();

@@ -29,8 +29,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="..\RDtext\src\**\*.cs" Exclude="..\RDtext\src\Properties.cs">
-            <Link>%(RecursiveDir)%(FileName)</Link>
+        <Compile Include="..\RDtext\src\**\*.cs" Exclude="..\RDtext\src\Properties\AssemblyInfo.cs">
+            <Link>lib\%(RecursiveDir)%(FileName)</Link>
         </Compile>
     </ItemGroup>
 

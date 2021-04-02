@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using RDtext.Attributes;
+using RDtext.Base;
 
 namespace RDtext.Buffers {
 
     /// <summary>
     ///     abstraction for a file buffer
     /// </summary>
-    public abstract class BufferBase : IDisposable {
+    [Mutable]
+    public abstract class BufferBase : AsyncDisposable {
 
         private readonly Dictionary<long, Page> bufferedPages
             = new();
@@ -68,9 +71,7 @@ namespace RDtext.Buffers {
             if (page is null)
                 throw new ArgumentNullException(nameof(page));
 
-            if (mutex == default)
-                throw new ObjectDisposedException(nameof(mutex));
-
+            ThrowIfObjectDisposed();
 
             await mutex.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
@@ -83,7 +84,7 @@ namespace RDtext.Buffers {
 
                 if (bufferedPages.TryGetValue(page.Number, out var oldPage)) {
                     _ = bufferedPages.Remove(page.Number);
-                    oldPage.Dispose();
+                    await oldPage.DisposeAsync().ConfigureAwait(false);
                 }
             }
             finally {
@@ -102,10 +103,9 @@ namespace RDtext.Buffers {
             if (number < 0)
                 throw new ArgumentOutOfRangeException(nameof(number));
 
-            if (mutex == default)
-                throw new ObjectDisposedException(nameof(mutex));
+            ThrowIfObjectDisposed();
 
-            await mutex.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await mutex.WaitAsync(cancellationToken).NoSync();
             try {
                 if (bufferedPages.TryGetValue(number, out var result)) {
                     result.Pin();
@@ -116,7 +116,7 @@ namespace RDtext.Buffers {
                     var lastPage = pageQueue.Dequeue();
                     if (bufferedPages.TryGetValue(lastPage, out var oldPage) && !oldPage.IsPinned) {
                         _ = bufferedPages.Remove(lastPage);
-                        oldPage.Dispose();
+                        await oldPage.DisposeAsync().ConfigureAwait(false);
                     }
                 }
 
@@ -127,7 +127,7 @@ namespace RDtext.Buffers {
                 if (loadPage.IsCompletedSuccessfully)
                     result.Length = loadPage.Result;
                 else
-                    result.Length = await loadPage.ConfigureAwait(false);
+                    result.Length = await loadPage.NoSync();
 
                 bufferedPages.Add(number, result);
                 pageQueue.Enqueue(number);
@@ -141,9 +141,7 @@ namespace RDtext.Buffers {
         /// <summary>
         ///     dispose this buffer
         /// </summary>
-        /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing) {
-            if (!disposing) return;
+        public virtual async ValueTask DisposeAsync() {
 
             if (mutex != default) {
                 mutex.Dispose();
@@ -153,18 +151,9 @@ namespace RDtext.Buffers {
             var pages = new List<long>(bufferedPages.Count);
             foreach (var number in pages) {
                 if (bufferedPages.Remove(number, out var page)) {
-                    page.Dispose();
+                    await page.DisposeAsync().ConfigureAwait(false);
                 }
             }
-        }
-
-
-        /// <summary>
-        ///     dispose this object
-        /// </summary>
-        public void Dispose() {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

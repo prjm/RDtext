@@ -1,10 +1,13 @@
 using System;
+using System.Threading.Tasks;
+using RDtext.Attributes;
 
-namespace RDtext.DataPooling {
+namespace RDtext.Base {
 
     /// <summary>
     ///     helper class for use and return objects
     /// </summary>
+    [Helper]
     public static class UseAndReturn {
 
         /// <summary>
@@ -12,15 +15,19 @@ namespace RDtext.DataPooling {
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
-        public static UseAndReturn<T> That<T>(T element) where T : UsageCountedObject
-            => new(element);
+        public static UseAndReturn<T> That<T>(T element) where T : UsageCountedObject {
+            if (element is null)
+                throw new ArgumentNullException(nameof(element));
 
+            return new(element);
+        }
     }
 
     /// <summary>
     ///     helper structure for use and return scenarios
     /// </summary>
-    public readonly struct UseAndReturn<T> : IDisposable, IEquatable<UseAndReturn<T>> where T : UsageCountedObject {
+    [Mutable]
+    public readonly struct UseAndReturn<T> : IAsyncDisposable, IEquatable<UseAndReturn<T>> where T : UsageCountedObject {
 
         /// <summary>
         ///     create a new use and return structure
@@ -37,8 +44,14 @@ namespace RDtext.DataPooling {
         /// <summary>
         ///     decrement usage count
         /// </summary>
-        public void Dispose()
-            => Data.UnPin();
+        public ValueTask DisposeAsync() {
+            try {
+                return Data.UnPin();
+            }
+            catch (Exception exception) {
+                return new ValueTask(Task.FromException(exception));
+            }
+        }
 
         /// <summary>
         ///     check for equality

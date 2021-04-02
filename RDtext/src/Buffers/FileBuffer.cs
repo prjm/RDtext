@@ -1,12 +1,15 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using RDtext.Attributes;
+using RDtext.Base;
 
 namespace RDtext.Buffers {
 
     /// <summary>
     ///     buffer for files
     /// </summary>
+    [Mutable]
     public class FileBuffer : BufferBase {
         private readonly string filePath;
 
@@ -38,7 +41,7 @@ namespace RDtext.Buffers {
 
             using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, Owner.PageSize, true);
             stream.Position = offset;
-            return await stream.ReadAsync(page.GetBuffer(), token).ConfigureAwait(false);
+            return await stream.ReadAsync(page.GetBuffer(), token).NoSync();
         }
     }
 }

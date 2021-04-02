@@ -1,12 +1,15 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using RDtext.Attributes;
+using RDtext.Base;
 
 namespace RDtext.Buffers {
 
     /// <summary>
     ///     buffer for streams (for testing purposes)
     /// </summary>
+    [Mutable]
     public class StreamBuffer : BufferBase {
 
         /// <summary>
@@ -44,7 +47,7 @@ namespace RDtext.Buffers {
             if (result.IsCompletedSuccessfully)
                 return result.Result;
             else
-                return await result.ConfigureAwait(false);
+                return await result.NoSync();
         }
 
     }

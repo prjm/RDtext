@@ -1,11 +1,14 @@
 using System.Threading;
 using System.Threading.Tasks;
+using RDtext.Attributes;
+using RDtext.Base;
 
 namespace RDtext.DataPooling {
 
     /// <summary>
     ///     base class for pool items
     /// </summary>
+    [Mutable]
     public abstract class PoolItem : UsageCountedObject {
 
         /// <summary>
@@ -32,7 +35,7 @@ namespace RDtext.DataPooling {
         /// <param name="cancellationToken">cancellation token</param>
         protected override ValueTask DoUnPin(bool isPinned, CancellationToken cancellationToken = default) {
             if (!isPinned) ObjectPool.ReturnPoolItem(this);
-            return new ValueTask();
+            return default;
         }
 
     }
