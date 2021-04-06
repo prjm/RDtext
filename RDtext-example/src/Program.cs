@@ -12,7 +12,7 @@ namespace RDtext.Example {
     public static class Program {
 
         public static async Task Main() {
-            await using var buffers = new FileBuffers();
+            await using var buffers = new FileBuffers(new FileBufferOptions());
             var id = new BufferId(Guid.NewGuid(), "*");
             var buffer = await buffers.AddForFile(id, "d:\\temp\\2.abc").NoSync();
 

@@ -10,7 +10,7 @@ namespace RDtext.Buffers {
     public class BufferId : IEquatable<BufferId> {
 
         /// <summary>
-        ///
+        ///     create a new buffer id
         /// </summary>
         /// <param name="id"></param>
         /// <param name="label"></param>

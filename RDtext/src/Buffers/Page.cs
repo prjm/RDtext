@@ -72,6 +72,15 @@ namespace RDtext.Buffers {
                 await Owner.RemovePageFromBuffer(this, cancellationToken).NoSync();
         }
 
+        /// <summary>
+        ///     dispose this page and return the buffer
+        /// </summary>
+        /// <returns></returns>
+        protected override async ValueTask DoDisposeAsync() {
+            await ReturnBuffer().NoSync();
+            await base.DoDisposeAsync().NoSync();
+        }
+
         private async ValueTask ReturnBuffer() {
             var buf = Buffer;
             Buffer = default;

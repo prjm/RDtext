@@ -23,7 +23,8 @@ namespace RDtext.Tests {
 
         [TestMethod]
         public async Task TestPageCaching() {
-            await using var buffers = new FileBuffers(10, 5);
+            var options = new FileBufferOptions(10, 5);
+            await using var buffers = new FileBuffers(options);
             var memStream = new MemoryStream();
 
             var data = new byte[150];
@@ -34,11 +35,11 @@ namespace RDtext.Tests {
 
             var id = new BufferId(Guid.NewGuid(), "*");
             await using var buffer = await buffers.AddForMememoryStream(id, memStream).NoSync();
-            await using var page1 = await buffer.GetPageAsync(0).ConfigureAwait(false);
-            await using var page2 = await buffer.GetPageAsync(1).ConfigureAwait(false);
-            await using var page3 = await buffer.GetPageAsync(2).ConfigureAwait(false);
-            await using var page4 = await buffer.GetPageAsync(3).ConfigureAwait(false);
-            await using (var page5 = await buffer.GetPageAsync(4).ConfigureAwait(false)) {
+            await using var page1 = await buffer.GetPageAsync(0).NoSync();
+            await using var page2 = await buffer.GetPageAsync(1).NoSync();
+            await using var page3 = await buffer.GetPageAsync(2).NoSync();
+            await using var page4 = await buffer.GetPageAsync(3).NoSync();
+            await using (var page5 = await buffer.GetPageAsync(4).NoSync()) {
 
                 AssertEqual(0L, page1.Number);
                 AssertEqual(1L, page2.Number);
@@ -58,7 +59,8 @@ namespace RDtext.Tests {
 
         [TestMethod]
         public async Task TestReadFromStream() {
-            await using var buffers = new FileBuffers(100);
+            var options = new FileBufferOptions(100, 10);
+            await using var buffers = new FileBuffers(options);
             using var memStream = new MemoryStream();
 
             var data = new byte[150];
@@ -72,6 +74,7 @@ namespace RDtext.Tests {
             AssertEqual(1, page.Data[1]);
             AssertEqual(100, page.Data.Length);
             await page.DisposeAsync().NoSync();
+            AssertEqual(1, buffers.Pool.Count);
 
             page = UseAndReturn.That(await buffer.GetPageAsync(0).ConfigureAwait(false));
             AssertEqual(0L, page.Data.Number);

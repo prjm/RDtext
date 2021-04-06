@@ -11,6 +11,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="src\Buffers\BufferId.cs~RF5624910.TMP" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="System.Memory" Version="4.5.4" />
         <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     </ItemGroup>

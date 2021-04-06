@@ -73,7 +73,7 @@ namespace RDtext.Buffers {
 
             ThrowIfObjectDisposed();
 
-            await mutex.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await mutex!.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
 
                 for (var i = 0; i < pageQueue.Count; i++) {
@@ -105,7 +105,7 @@ namespace RDtext.Buffers {
 
             ThrowIfObjectDisposed();
 
-            await mutex.WaitAsync(cancellationToken).NoSync();
+            await mutex!.WaitAsync(cancellationToken).NoSync();
             try {
                 if (bufferedPages.TryGetValue(number, out var result)) {
                     result.Pin();
@@ -141,7 +141,7 @@ namespace RDtext.Buffers {
         /// <summary>
         ///     dispose this buffer
         /// </summary>
-        public virtual async ValueTask DisposeAsync() {
+        protected override async ValueTask DoDisposeAsync() {
 
             if (mutex != default) {
                 mutex.Dispose();
@@ -154,6 +154,8 @@ namespace RDtext.Buffers {
                     await page.DisposeAsync().ConfigureAwait(false);
                 }
             }
+
+            await base.DoDisposeAsync().NoSync();
         }
     }
 }

@@ -13,10 +13,16 @@ namespace RDtext.Buffers {
     /// </summary>
     public class FileBuffers : IAsyncDisposable {
 
-        private const int DefaultPageSize
+        /// <summary>
+        ///     default page size
+        /// </summary>
+        public const int DefaultPageSize
             = 100 * 1024;
 
-        private const int DefaultNumberOfPages
+        /// <summary>
+        ///     default number of cached pages
+        /// </summary>
+        public const int DefaultNumberOfPages
             = 10;
 
         private readonly ConcurrentDictionary<BufferId, BufferBase> buffers
@@ -30,19 +36,21 @@ namespace RDtext.Buffers {
         /// <summary>
         ///     create a new set of buffers
         /// </summary>
-        /// <param name="pageSize">page size</param>
-        /// <param name="numberOfPages">number of cached read pages</param>
+        /// <param name="options">buffer options</param>
         /// <param name="arrayPool"></param>
-        public FileBuffers(int pageSize = DefaultPageSize, int numberOfPages = DefaultNumberOfPages, FixedSizeArrayPool<byte>? arrayPool = default) {
-            PageSize = pageSize;
-            NumberOfCachedPages = numberOfPages;
-            Pool = arrayPool ?? new FixedSizeArrayPool<byte>(pageSize);
+        public FileBuffers(FileBufferOptions options, FixedSizeArrayPool<byte>? arrayPool = default) {
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
 
-            if (numberOfPages < 0)
-                throw new ArgumentOutOfRangeException(nameof(numberOfPages));
+            PageSize = options.PageSize.Value;
+            NumberOfCachedPages = options.NumberOfPages.Value;
+            Pool = arrayPool ?? new FixedSizeArrayPool<byte>(PageSize);
 
-            if (Pool.Capacity != pageSize)
-                throw new ArgumentOutOfRangeException(nameof(pageSize));
+            if (NumberOfCachedPages < 0)
+                throw new ArgumentOutOfRangeException(nameof(options), nameof(options.NumberOfPages));
+
+            if (Pool.Capacity != PageSize)
+                throw new ArgumentOutOfRangeException(nameof(options), nameof(options.PageSize));
         }
 
         /// <summary>
